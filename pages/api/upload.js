@@ -2,18 +2,21 @@ import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import multiParty from "multiparty"
 import fs from "fs"
 import mime from "mime-types"
-
+import { mongooseConnect } from "@/lib/mongoose";
+import { isAdminRequest } from "./auth/[...nextauth]";
 const bucketName = "nextjs-project-kris"
 
-export default async function handle(req, res) {
+export default async function handle(req,res) {
+  await mongooseConnect();
+
   const form = new multiParty.Form();
-  const { fields, files } = await new Promise((resolve, reject) => {
+  const {fields,files} = await new Promise((resolve,reject) => {
     form.parse(req, (err, fields, files) => {
       if (err) reject(err);
-      resolve({ fields, files })
+      resolve({fields,files});
     });
   });
-  console.log("lentg:", files.file.length);
+  console.log('length:', files.file.length);
   const client = new S3Client({
     region: 'eu-north-1',
     credentials: {
@@ -21,25 +24,23 @@ export default async function handle(req, res) {
       secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
     },
   });
-
   const links = [];
   for (const file of files.file) {
-    const ext = file.originalFilename.split(".").pop();
-    const newFilename= Date.now() + "." + ext;
+    const ext = file.originalFilename.split('.').pop();
+    const newFilename = Date.now() + '.' + ext;
     await client.send(new PutObjectCommand({
-        Bucket: bucketName,
-        Key: newFilename, // Replace with your own key
-        Body: fs.readFileSync(file.path),
-        ACL: "public-read",
-        ContentType: mime.lookup(file.path),
-      }));
+      Bucket: bucketName,
+      Key: newFilename,
+      Body: fs.readFileSync(file.path),
+      ACL: 'public-read',
+      ContentType: mime.lookup(file.path),
+    }));
     const link = `https://${bucketName}.s3.amazonaws.com/${newFilename}`;
-    links.push(link)
+    links.push(link);
   }
-
-  return res.json({links})
+  return res.json({links});
 }
 
 export const config = {
-  api: { bodyParser: false },
-}
+  api: {bodyParser: false},
+};

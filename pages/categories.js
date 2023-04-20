@@ -1,4 +1,3 @@
-
 import Layout from "@/components/layout";
 import axios from "axios";
 import { useEffect, useState } from "react";
@@ -20,6 +19,9 @@ function Categories({ swal }) {
       .get("/api/categories")
       .then(result => {
         setCategories(result.data);
+      })
+      .catch(error => {
+        console.error("Failed to fetch categories:", error);
       });
   }
 
@@ -50,6 +52,61 @@ function Categories({ swal }) {
     setEditedCategory(category);
     setName(category.name);
     setParentCategory(category.parent?._id);
+    setProperties(
+      category.properties.map(({name, values}) => ({
+        name, 
+        values:values.join(",")
+      }))
+      );
+  }
+
+  async function deleteCategory(category) {
+    swal.fire({
+      title: "Are you sure?",
+      text: `Do you want to delete ${category.name}`,
+      showCancelButton: true,
+      cancelButtonText: "Cancel",
+      confirmButtonText: "Yes, Delete!",
+      confirmButtonColor: "#d55",
+      reverseButton: true,
+    })
+    .then(async result => {
+      if (result.isConfirmed) {
+        const { _id } = category;
+        await axios.delete('/api/categories?_id=' + _id);
+        fetchCategories();
+      }
+    })
+  }
+
+  function addProperty() {
+    setProperties(prev => {
+      return [...prev, { name: "", values: "" }];
+    });
+  }
+
+  function handlePropertyNameChange(index, property, newName) {
+    setProperties(prev => {
+      const updatedProperties = [...prev];
+      updatedProperties[index].name = newName;
+      return updatedProperties;
+    });
+  }
+
+  function handlePropertyValuesChange(index, property, newValues) {
+    setProperties(prev => {
+      const updatedProperties = [...prev];
+      updatedProperties[index].values = newValues;
+      return updatedProperties;
+    });
+  }
+
+  function removeProperty(indexToRemove) {
+    setProperties(prev => {
+      return prev.filter((p, pIndex) => {
+        return pIndex !== indexToRemove;
+      }); 
+    });
   }
 
   async function deleteCategory(category) {
@@ -178,6 +235,7 @@ function Categories({ swal }) {
                 setEditedCategory(null);
                 setName("");
                 setParentCategory("");
+                setProperties([]);
               }}
             >
               Cancel
@@ -205,13 +263,13 @@ function Categories({ swal }) {
                   <td>{category?.parent?.name}</td>
                   <td>
                     <button
-                      className="btn-primary mr-1"
+                      className="btn-default mr-1"
                       onClick={() => editCategory(category)}
                     >
                       Edit
                     </button>
                     <button
-                      className="btn-primary"
+                      className="btn-red"
                       onClick={() => deleteCategory(category)}
                     >
                       Delete
@@ -227,7 +285,4 @@ function Categories({ swal }) {
   
   }
   
-  export default withSwal(({ swal }, ref) => {
-    return <Categories swal={swal} ref={ref} />;
-  });
-  
+  export default withSwal(Categories)
