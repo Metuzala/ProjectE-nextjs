@@ -1,6 +1,6 @@
 import axios from "axios";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Spinner from "./spinner";
 import { ReactSortable } from "react-sortablejs";
 
@@ -10,18 +10,30 @@ export default function ProductForm({
     price: exictingPrice,
     description: exictingDescription,
     images: exictingImages,
+    category: assignedCategory,
 }) {
     const [title, setTitle] = useState(existingTitle || "");
-    const [description, setDescription] = useState(exictingDescription || "")
-    const [images, setImages] = useState(exictingImages || [])
-    const [price, setPrice] = useState(exictingPrice || "")
-    const [goToProducts, setGoToProducts] = useState(false)
-    const [isuploading, setIsUploading] = useState(false)
+    const [description, setDescription] = useState(exictingDescription || "");
+    const [images, setImages] = useState(exictingImages || []);
+    const [price, setPrice] = useState(exictingPrice || "");
+    const [goToProducts, setGoToProducts] = useState(false);
+    const [isuploading, setIsUploading] = useState(false);
+    const [category, setCategory] = useState(assignedCategory || "");
+    const [categories, setCategories] = useState([]);
     const router = useRouter();
 
 
+    useEffect(() => { 
+        axios.get("/api/categories")
+        .then(result => {
+            setCategories(result.data)
+        })
+      }, []);
+    
+
+
     async function saveProduct(e) {
-        const data = { title, description, price, images };
+        const data = { title, description, price, images, category };
         e.preventDefault();
         if (_id) {
             await axios.put("/api/products", { ...data, _id });
@@ -63,6 +75,14 @@ export default function ProductForm({
                 type="text"
                 placeholder="product name"
                 onChange={e => setTitle(e.target.value)} />
+                <label>Category</label>
+                <select value={category}
+                onChange={(e) => setCategory(e.target.value)}>
+                    <option value="">Uncategorized</option>
+                    {categories.length > 0 && categories.map((c) => (
+                        <option value={c._id}>{c.name}</option>
+                    ))}
+                </select>
             <label>
                 Photos
             </label>

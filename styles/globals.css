@@ -49,5 +49,5 @@ table.basic a{
     @apply bg-red-800 text-white;
 }
 .btn-default {
-    @apply bg-gray-200 text-white;
+    @apply bg-gray-400 text-white;
 }
